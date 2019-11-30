@@ -1,5 +1,8 @@
 package Modelos;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -10,17 +13,44 @@ import javafx.collections.ObservableList;
 
 public class AplicativosDAO implements InterfaceDAO<Aplicativos>{
 	private static ObservableList<Aplicativos> apps;
-
+	private String ipServer = "localhost";
+	private int portServer = 1024;
+	
 	@Override
 	public Aplicativos get(String id) {
+		Aplicativos app = null;
+		
+		//====================================
+		try {
+			Socket server = new Socket(ipServer, portServer);
+
+			ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
+			out.writeUTF("Aplicativos;get;" + id);
+			out.flush();
+
+			ObjectInputStream in = new ObjectInputStream(server.getInputStream());
+			String msg = in.readUTF();
+
+			if (!msg.contains("404")) {
+				String[] splitResult = msg.split(";");
+				app = new Aplicativos(splitResult[0], splitResult[1], splitResult[2], );
+			}
+
+			in.close();
+			out.close();
+			server.close();
+		} catch (Exception e) {
+			System.out.println("Erro: " + e.getMessage());
+		}
+		
+		
+		// ======================================================
 		if (apps != null)
 			for (Aplicativos aplicativo : apps)
 				if (aplicativo.getNome().contentEquals(id))
 					return aplicativo;
 
-		EntityManager entityMng = Conn.getEntityManager();
-		Aplicativos aplicativo = entityMng.find(Aplicativos.class, id);
-		entityMng.close();
+
 		return aplicativo;
 
 	}
